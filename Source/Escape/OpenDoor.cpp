@@ -3,6 +3,8 @@
 
 #include "OpenDoor.h"
 #include "BehaviorTree/BehaviorTreeTypes.h"
+#include "GameFramework/Actor.h"
+#include "Math/UnrealMathUtility.h"
 
 // Sets default values for this component's properties.
 UOpenDoor::UOpenDoor()
