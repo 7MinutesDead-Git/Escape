@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "PhysicsEngine/PhysicsHandleComponent.h"
+
 #include "ItemGrabber.generated.h"
 
 
@@ -35,11 +37,20 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	UPROPERTY(EditAnywhere) APlayerController* Player;
+	// Variables.
+	UPROPERTY(EditAnywhere)
+	APlayerController* Player;
 	FPlayerView PlayerView;
+	FHitResult GrabbableHit;
+	AActor GrabbableActor;
+	FVector LineTraceEnd;
 	float Reach = 1000;
+	UPhysicsHandleComponent* PhysicsHandle = nullptr;
+	// Functions.
+	void GetGrabbableObject();
 
 	// Debug helper functions.
-	void DebugLineStuff(FVector LineEnd);
+	void DebugLineStuff();
+	void NotifyLoading();
 
 };
