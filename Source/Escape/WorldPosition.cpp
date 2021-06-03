@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "GameFramework/Actor.h"
 #include "WorldPosition.h"
+#include "GameFramework/Actor.h"
 
 /// Sets default values for this component's properties.
 UWorldPosition::UWorldPosition()
