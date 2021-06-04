@@ -1,4 +1,5 @@
-// Copyright 2021, Alex Gulikers, 7 Minutes Dead
+// Copyright 2021, Alex Gulikers, 7 Minutes Dead.
+// Although these are mostly notes for reference to myself, so you are welcome to pick it apart!
 
 #include "ItemGrabber.h"
 #include "GameFramework/PlayerController.h"
