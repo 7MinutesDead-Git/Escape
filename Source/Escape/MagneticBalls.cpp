@@ -1,4 +1,4 @@
-// Alex Gulikers, 7 Minutes Dead, Copyright 2021
+// Copyright 2021, Alex Gulikers, 7 Minutes Dead
 
 
 #include "MagneticBalls.h"

@@ -1,4 +1,5 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2021, Alex Gulikers, 7 Minutes Dead.
+// Although these are mostly notes for reference to myself, so you are welcome to pick it apart!
 
 #pragma once
 
