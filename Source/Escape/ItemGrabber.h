@@ -44,10 +44,12 @@ private:
 	FHitResult GrabbableHit;
 	AActor GrabbableActor;
 	FVector LineTraceEnd;
-	float Reach = 1000;
+	float Reach = 1000.f;
+	UPROPERTY()
 	UPhysicsHandleComponent* PhysicsHandle = nullptr;
 	// Functions.
 	void GetGrabbableObject();
+	void GetPhysicsHandle();
 
 	// Debug helper functions.
 	void DebugLineStuff();

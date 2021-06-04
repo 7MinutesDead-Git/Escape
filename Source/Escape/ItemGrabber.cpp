@@ -1,8 +1,8 @@
 // Alex Gulikers, 7 Minutes Dead, Copyright 2021
 
+#include "ItemGrabber.h"
 #include "GameFramework/PlayerController.h"
 #include "DrawDebugHelpers.h"
-#include "ItemGrabber.h"
 // To give myself a heads up that something is an out parameter.
 #define OUT
 
@@ -26,19 +26,7 @@ void UItemGrabber::BeginPlay()
 	Super::BeginPlay();
 	NotifyLoading();
 	Player = GetWorld()->GetFirstPlayerController();
-
-	// Get the PhysicsHandle component we added to the DefaultPawnBP.
-	// UItemGrabber is also attached to DefaultPawnBP, so GetOwner will work for this too.
-	// Since FindComponentByClass is a function template, we construct by <type>.
-	// This will return the first UPhysicsHandleComponent found in the Owner (DefaultPawnBP).
-	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
-
-	if (!PhysicsHandle) {
-		UE_LOG(LogTemp, Error,
-			TEXT("%s has no Physics Handle Component (needed by ItemGrabber)!"),
-			*GetOwner()->GetName()
-		);
-	}
+	// GetPhysicsHandle();
 	// ...
 }
 
@@ -56,6 +44,7 @@ void UItemGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 
 	GetGrabbableObject();
 	DebugLineStuff();
+
 	// If key is pressed, grab object and move to set short distance in front of player.
 	// If key is released, release object.
 	// ...
@@ -77,7 +66,7 @@ void UItemGrabber::GetGrabbableObject()
 		GetOwner()			// Which objects to ignore (make sure the ray hitting ourselves doesn't count).
 	);
 
-	// LineTrace (raycast) from view to certain distance, see what the cast hits.
+	// LineTrace (raycast) from player to LineTraceEnd and see what we hit.
 	GetWorld()->LineTraceSingleByObjectType(
 		OUT GrabbableHit,
 		PlayerView.Location,
@@ -85,6 +74,23 @@ void UItemGrabber::GetGrabbableObject()
 		FCollisionObjectQueryParams(ECC_PhysicsBody),
 		TraceParameters
 	);
+}
+
+
+void UItemGrabber::GetPhysicsHandle()
+{
+	// Get the PhysicsHandle component we added to the DefaultPawnBP.
+	// UItemGrabber is also attached to DefaultPawnBP, so GetOwner will work for this too.
+	// Since FindComponentByClass is a function template, we construct by <type>.
+	// This will return the first UPhysicsHandleComponent found in the Owner (DefaultPawnBP).
+	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
+
+	if (!PhysicsHandle) {
+		UE_LOG(LogTemp, Error,
+			TEXT("%s has no Physics Handle Component (needed by ItemGrabber)!"),
+			*GetOwner()->GetName()
+		);
+	}
 }
 
 // --------------------------------------------------------------------
