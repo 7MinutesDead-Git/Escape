@@ -36,34 +36,59 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	// Variables.
+	// Variables. ---------------------------------------------------------------------
 	FPlayerView PlayerView;
 	FHitResult GrabbableHit;
-	FVector LineTraceEnd;
-	bool HoldingItem = false;
-	float Reach = 1000.f;
+	FVector GrabReachEnd;
+	FVector HoldPoint;
 
-	// Pointers.
+	bool HoldingItem = false;
+	float DoubleClickSafetyTimer;
+
+	// TODO: Find out why this is:
+	/// If GrabReach is larger than HoldDistance, grabbed doesn't follow very well.
+	UPROPERTY(EditAnywhere)
+	float GrabReach = 180;
+
+	/// If GrabReach is larger than HoldDistance, grabbed doesn't follow very well.
+	UPROPERTY(EditAnywhere)
+	float HoldDistance = 180;
+
+	UPROPERTY(EditAnywhere)
+	float ThrowStrength = 1000.f;
+
+	UPROPERTY(EditAnywhere)
+	bool EnableDebugLines = false;
+
+	// Pointers. ----------------------------------------------------------------------
 	UPROPERTY(EditAnywhere)
 	APlayerController* Player;
-	UPROPERTY()
-	AActor* GrabbableActor;
+
+	/// Our Physics Handle Component added via Blueprint to the player pawn.
 	UPROPERTY()
 	UPhysicsHandleComponent* PhysicsHandle;
+
+	/// The Component we want to grab.
+	UPROPERTY()
+	UPrimitiveComponent* ComponentToGrab;
+
+	/// Our input.
 	UPROPERTY()
 	UInputComponent* PlayerInput;
 
-	// Functions.
+	// Functions. ----------------------------------------------------------------------
+	void GetPlayerView();
+	FVector GetHoldPoint();
+	FVector GetGrabReachEnd();
 	void GetGrabbableObject();
 	void GetPhysicsHandle();
 	void GetPlayerInput();
 	void BindActionsToKeys();
-	void Grab();
-	void Drop();
+	void GrabToggle();
 	void Throw();
 
-	// Debug helper functions.
-	void DebugLineStuff();
+	// Debug helper functions. ---------------------------------------------------------
+	void DebugViewInfo();
 	void NotifyLoading();
 
 };

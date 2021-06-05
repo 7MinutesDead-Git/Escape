@@ -39,32 +39,56 @@ void UItemGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// Get player's viewpoint and set it to our PlayerView data structure.
-	Player->GetPlayerViewPoint(
-		OUT PlayerView.Location,
-		OUT PlayerView.Rotation);
+	// If we're holding an object, then update hold point and move it towards that point.
+	if (PhysicsHandle->GrabbedComponent) {
+		HoldPoint = GetHoldPoint();
+		PhysicsHandle->SetTargetLocation(HoldPoint);
 
-	GetGrabbableObject();
-	DebugLineStuff();
+	}
 
-	// If key is pressed, grab object and move to set short distance in front of player.
-	// If key is released, release object.
-	// ...
+	if (EnableDebugLines) {
+		DebugViewInfo();
+	}
 }
 
 
 // ----------------------------------------------------------------------
-/// Do a line trace and see what object we can grab. Update GrabbableHit.
+/// Get player's viewpoint and set it to our PlayerView data structure.
+void UItemGrabber::GetPlayerView()
+{
+	Player->GetPlayerViewPoint(
+		OUT PlayerView.Location,
+		OUT PlayerView.Rotation
+	);
+}
+
+/// Get player view. Return point in front of player based on HoldDistance.
+FVector UItemGrabber::GetHoldPoint()
+{
+	GetPlayerView();
+	return PlayerView.Location + PlayerView.Rotation.Vector() * HoldDistance;
+}
+
+/// Get player view. Return point in front of player based on GrabReach.
+FVector UItemGrabber::GetGrabReachEnd()
+{
+	GetPlayerView();
+	return PlayerView.Location + PlayerView.Rotation.Vector() * GrabReach;
+}
+
+
+// ----------------------------------------------------------------------
+/// Do a line trace and see what object we can grab. Update GrabbableHit via OUT.
 void UItemGrabber::GetGrabbableObject()
 {
-	// The max length point of the ray cast we want.
-	// Player location + rotation * the length of grab.
-	LineTraceEnd = PlayerView.Location + PlayerView.Rotation.Vector() * Reach;
+	GetPlayerView();
+	GrabReachEnd = GetGrabReachEnd();
+	HoldPoint = GetHoldPoint();
 
 	// Define what should be considered a collision for what can be grabbed.
 	const FCollisionQueryParams TraceParameters(
 		FName(TEXT("")),	// The tag name.
-		false,				// Use complex collisions?
+		true,				// Use complex collisions for grab attempt?
 		GetOwner()			// Which objects to ignore (make sure the ray hitting ourselves doesn't count).
 	);
 
@@ -72,11 +96,14 @@ void UItemGrabber::GetGrabbableObject()
 	GetWorld()->LineTraceSingleByObjectType(
 		OUT GrabbableHit,
 		PlayerView.Location,
-		LineTraceEnd,
+		GrabReachEnd,
 		FCollisionObjectQueryParams(ECC_PhysicsBody),
 		TraceParameters
 	);
+
+	ComponentToGrab = GrabbableHit.GetComponent();
 }
+
 
 // ----------------------------------------------------------------------
 /// Get the PhysicsHandle component that should be added to the Owner pawn.\n
@@ -96,6 +123,7 @@ void UItemGrabber::GetPhysicsHandle()
 	}
 }
 
+
 // ----------------------------------------------------------------------
 /// Get the InputComponent on the owner (player pawn) of this component (ItemGrabber).
 void UItemGrabber::GetPlayerInput()
@@ -110,37 +138,36 @@ void UItemGrabber::GetPlayerInput()
 	}
 }
 
+
 // ----------------------------------------------------------------------
 /// Bind each relevant function to each of our player inputs.
 void UItemGrabber::BindActionsToKeys()
 {
 	// Run Grab function when "Grab" key is pressed.
 	// (1) Action/input name, (2) KeyEvent type, (3) Object, (4) Point to &address of function.
-	PlayerInput->BindAction("Grab",	IE_Pressed,	this, &UItemGrabber::Grab);
-	PlayerInput->BindAction("Drop", IE_Pressed, this, &UItemGrabber::Drop);
+	PlayerInput->BindAction("Grab",	IE_Pressed,	this, &UItemGrabber::GrabToggle);
 	PlayerInput->BindAction("Throw", IE_Pressed, this, &UItemGrabber::Throw);
 }
 
-// --------------------------------------------------------------------
-/// Grab an object in view if not holding item (makes grab/drop a toggle).
-void UItemGrabber::Grab()
-{
-	if (!HoldingItem) {
-		HoldingItem = true;
-		// Reach any actors with physics body collision channel set.
-		// If we hit something, then attach physics handle.
-		// TODO...
-	}
-}
 
 // --------------------------------------------------------------------
-/// Drop item if holding one (makes grab/drop a toggle).
-void UItemGrabber::Drop()
+/// Grab (or drop) object in view.
+void UItemGrabber::GrabToggle()
 {
-	if (HoldingItem) {
+	if (!HoldingItem) {
+		GetGrabbableObject();
+		// If GrabbableHit has been hit by our line trace in GetGrabbableObject..
+		if (GrabbableHit.GetActor()) {
+			// Then Grab whatever component is there at GrabReachEnd.
+			UE_LOG(LogTemp, Warning, TEXT("Grabbed item."));
+			PhysicsHandle->GrabComponentAtLocation(ComponentToGrab, NAME_None, GrabReachEnd);
+			HoldingItem = true;
+		}
+	}
+	else if (HoldingItem) {
+		PhysicsHandle->ReleaseComponent();
+		UE_LOG(LogTemp, Warning, TEXT("Dropped item."));
 		HoldingItem = false;
-		// Release the physics handle of the actor we grabbed.
-		// TODO...
 	}
 }
 
@@ -149,10 +176,9 @@ void UItemGrabber::Drop()
 void UItemGrabber::Throw()
 {
 	if (HoldingItem) {
+		PhysicsHandle->SetTargetLocation(GetHoldPoint() * ThrowStrength);
+		PhysicsHandle->ReleaseComponent();
 		HoldingItem = false;
-		// Release the physics handle of the actor we grabbed.
-		// Impulse object away from view.
-		// TODO...
 	}
 }
 
@@ -162,14 +188,14 @@ void UItemGrabber::Throw()
 // --------------------------------------------------------------------
 
 /// Draw debug line for grabby hands, log grabbable object hit.
-void UItemGrabber::DebugLineStuff()
+void UItemGrabber::DebugViewInfo()
 {
 	FColor Color;
 
 	DrawDebugLine(
 		GetWorld(),				 // InWorld.
 		PlayerView.Location,	 // LineStart.
-		LineTraceEnd,			 // LineEnd.
+		GrabReachEnd,			 // LineEnd.
 		Color.FromHex("00FF15"), // Color.
 		false,					 // PersistentLines.
 		1,						 // LifeTime.
@@ -177,14 +203,15 @@ void UItemGrabber::DebugLineStuff()
 		2						 // Thickness.
 	);
 
-	// Checking if GrabbableHit has an actor yet,
-	// should stop us from referencing a null pointer and crashing.
-	if (GrabbableHit.GetActor()) {
-		UE_LOG(LogTemp, Warning,
-			TEXT("Grabbable object: %s"),
-			*GrabbableHit.GetActor()->GetName()
-		);
-	}
+	UE_LOG(LogTemp, Warning,
+		TEXT("Physics target location: %s."),
+		*PhysicsHandle->TargetTransform.GetLocation().ToCompactString()
+	);
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("HoldPoint: %s"),
+		*HoldPoint.ToCompactString()
+	);
 }
 
 /// Notify this component was loaded successfully.
