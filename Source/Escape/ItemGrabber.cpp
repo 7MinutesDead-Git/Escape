@@ -193,14 +193,14 @@ void UItemGrabber::DebugViewInfo()
 	FColor Color;
 
 	DrawDebugLine(
-		GetWorld(),				 // InWorld.
-		PlayerView.Location,	 // LineStart.
-		GrabReachEnd,			 // LineEnd.
-		Color.FromHex("00FF15"), // Color.
-		false,					 // PersistentLines.
-		1,						 // LifeTime.
-		0,						 // DepthPriority
-		2						 // Thickness.
+		GetWorld(),					// InWorld.
+		PlayerView.Location,		// LineStart.
+		GrabReachEnd,				// LineEnd.
+		Color.FromHex("00FF15"),	// Color.
+		false,						// PersistentLines.
+		1,							// LifeTime.
+		0,							// DepthPriority
+		2							// Thickness.
 	);
 
 	UE_LOG(LogTemp, Warning,
