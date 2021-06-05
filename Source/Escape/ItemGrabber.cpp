@@ -87,9 +87,9 @@ void UItemGrabber::GetGrabbableObject()
 
     // Define what should be considered a collision for what can be grabbed.
     const FCollisionQueryParams TraceParameters(
-        FName(TEXT("")),	// The tag name.
-        true,				// Use complex collisions for grab attempt?
-        GetOwner()			// Which objects to ignore (make sure the ray hitting ourselves doesn't count).
+        FName(TEXT("")),  // The tag name.
+        true,             // Use complex collisions for grab attempt?
+        GetOwner()        // Which objects to ignore (make sure the ray hitting ourselves doesn't count).
     );
 
     // LineTrace (raycast) from player to LineTraceEnd and see what we hit.
@@ -145,7 +145,7 @@ void UItemGrabber::BindActionsToKeys()
 {
     // Run Grab function when "Grab" key is pressed.
     // (1) Action/input name, (2) KeyEvent type, (3) Object, (4) Point to &address of function.
-    PlayerInput->BindAction("Grab",	IE_Pressed,	this, &UItemGrabber::GrabToggle);
+    PlayerInput->BindAction("Grab", IE_Pressed, this, &UItemGrabber::GrabToggle);
     PlayerInput->BindAction("Throw", IE_Pressed, this, &UItemGrabber::Throw);
 }
 
