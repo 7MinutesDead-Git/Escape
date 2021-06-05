@@ -117,8 +117,8 @@ void UItemGrabber::GetPhysicsHandle()
 
     if (!PhysicsHandle) {
         UE_LOG(LogTemp, Error,
-            TEXT("%s has no Physics Handle Component (needed by ItemGrabber)!"),
-            *GetOwner()->GetName()
+               TEXT("%s has no Physics Handle Component (needed by ItemGrabber)!"),
+               *GetOwner()->GetName()
         );
     }
 }
@@ -132,8 +132,8 @@ void UItemGrabber::GetPlayerInput()
 
     if (!PlayerInput) {
         UE_LOG(LogTemp, Error,
-            TEXT("%s has no Input Component (needed by ItemGrabber)!"),
-            *GetOwner()->GetName()
+               TEXT("%s has no Input Component (needed by ItemGrabber)!"),
+               *GetOwner()->GetName()
         );
     }
 }
@@ -193,24 +193,24 @@ void UItemGrabber::DebugViewInfo()
     FColor Color;
 
     DrawDebugLine(
-        GetWorld(),               // InWorld.
-        PlayerView.Location,      // LineStart.
-        GrabReachEnd,             // LineEnd.
-        Color.FromHex("00FF15"),  // Color.
-        false,                    // PersistentLines.
-        1,                        // LifeTime.
-        0,                        // DepthPriority
-        2                         // Thickness.
+        GetWorld(),              // InWorld.
+        PlayerView.Location,     // LineStart.
+        GrabReachEnd,            // LineEnd.
+        Color.FromHex("00FF15"), // Color.
+        false,                   // PersistentLines.
+        1,                       // LifeTime.
+        0,                       // DepthPriority
+        2                        // Thickness.
     );
 
     UE_LOG(LogTemp, Warning,
-        TEXT("Physics target location: %s."),
-        *PhysicsHandle->TargetTransform.GetLocation().ToCompactString()
+           TEXT("Physics target location: %s."),
+           *PhysicsHandle->TargetTransform.GetLocation().ToCompactString()
     );
 
     UE_LOG(LogTemp, Warning,
-        TEXT("HoldPoint: %s"),
-        *HoldPoint.ToCompactString()
+           TEXT("HoldPoint: %s"),
+           *HoldPoint.ToCompactString()
     );
 }
 
@@ -218,7 +218,7 @@ void UItemGrabber::DebugViewInfo()
 void UItemGrabber::NotifyLoading()
 {
     UE_LOG(LogTemp, Warning,
-    TEXT("UItemGrabber loaded successfully on %s."),
-    *GetOwner()->GetName()
-);
+           TEXT("UItemGrabber loaded successfully on %s."),
+           *GetOwner()->GetName()
+    );
 }
