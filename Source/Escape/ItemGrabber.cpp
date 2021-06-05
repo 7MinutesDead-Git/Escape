@@ -12,10 +12,9 @@
 /// Sets default values for this component's properties.
 UItemGrabber::UItemGrabber()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
+	// Set this component to be initialized when the game starts, and to be ticked every frame.
+	// You can turn these features off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
 	// ...
 }
 
@@ -27,7 +26,9 @@ void UItemGrabber::BeginPlay()
 	Super::BeginPlay();
 	NotifyLoading();
 	Player = GetWorld()->GetFirstPlayerController();
-	// GetPhysicsHandle();
+	GetPhysicsHandle();
+	GetPlayerInput();
+	BindActionsToKeys();
 	// ...
 }
 
@@ -77,10 +78,11 @@ void UItemGrabber::GetGrabbableObject()
 	);
 }
 
-
+// ----------------------------------------------------------------------
+/// Get the PhysicsHandle component that should be added to the Owner pawn.\n
+/// Log error if Physics Handle Component is not attached to the Owner pawn.
 void UItemGrabber::GetPhysicsHandle()
 {
-	// Get the PhysicsHandle component we added to the DefaultPawnBP.
 	// UItemGrabber is also attached to DefaultPawnBP, so GetOwner will work for this too.
 	// Since FindComponentByClass is a function template, we construct by <type>.
 	// This will return the first UPhysicsHandleComponent found in the Owner (DefaultPawnBP).
@@ -93,6 +95,67 @@ void UItemGrabber::GetPhysicsHandle()
 		);
 	}
 }
+
+// ----------------------------------------------------------------------
+/// Get the InputComponent on the owner (player pawn) of this component (ItemGrabber).
+void UItemGrabber::GetPlayerInput()
+{
+	PlayerInput = GetOwner()->FindComponentByClass<UInputComponent>();
+
+	if (!PlayerInput) {
+		UE_LOG(LogTemp, Error,
+			TEXT("%s has no Input Component (needed by ItemGrabber)!"),
+			*GetOwner()->GetName()
+		);
+	}
+}
+
+// ----------------------------------------------------------------------
+/// Bind each relevant function to each of our player inputs.
+void UItemGrabber::BindActionsToKeys()
+{
+	// Run Grab function when "Grab" key is pressed.
+	// (1) Action/input name, (2) KeyEvent type, (3) Object, (4) Point to &address of function.
+	PlayerInput->BindAction("Grab",	IE_Pressed,	this, &UItemGrabber::Grab);
+	PlayerInput->BindAction("Drop", IE_Pressed, this, &UItemGrabber::Drop);
+	PlayerInput->BindAction("Throw", IE_Pressed, this, &UItemGrabber::Throw);
+}
+
+// --------------------------------------------------------------------
+/// Grab an object in view if not holding item (makes grab/drop a toggle).
+void UItemGrabber::Grab()
+{
+	if (!HoldingItem) {
+		HoldingItem = true;
+		// Reach any actors with physics body collision channel set.
+		// If we hit something, then attach physics handle.
+		// TODO...
+	}
+}
+
+// --------------------------------------------------------------------
+/// Drop item if holding one (makes grab/drop a toggle).
+void UItemGrabber::Drop()
+{
+	if (HoldingItem) {
+		HoldingItem = false;
+		// Release the physics handle of the actor we grabbed.
+		// TODO...
+	}
+}
+
+// --------------------------------------------------------------------
+/// Throw item if holding one!
+void UItemGrabber::Throw()
+{
+	if (HoldingItem) {
+		HoldingItem = false;
+		// Release the physics handle of the actor we grabbed.
+		// Impulse object away from view.
+		// TODO...
+	}
+}
+
 
 // --------------------------------------------------------------------
 // Debug helper functions.

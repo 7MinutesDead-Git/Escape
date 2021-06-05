@@ -1,4 +1,5 @@
-// Copyright 2021, Alex Gulikers, 7 Minutes Dead
+// Copyright 2021, Alex Gulikers, 7 Minutes Dead.
+// Although these are mostly notes for reference to myself, so you are welcome to pick it apart!
 
 #pragma once
 
@@ -25,31 +26,41 @@ class ESCAPE_API UItemGrabber : public UActorComponent
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this component's properties
+	// Sets default values for this component's properties.
 	UItemGrabber();
+	// Called every frame.
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-public:
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
 private:
 	// Variables.
-	UPROPERTY(EditAnywhere)
-	APlayerController* Player;
 	FPlayerView PlayerView;
 	FHitResult GrabbableHit;
-	AActor GrabbableActor;
 	FVector LineTraceEnd;
+	bool HoldingItem = false;
 	float Reach = 1000.f;
+
+	// Pointers.
+	UPROPERTY(EditAnywhere)
+	APlayerController* Player;
 	UPROPERTY()
-	UPhysicsHandleComponent* PhysicsHandle = nullptr;
+	AActor* GrabbableActor;
+	UPROPERTY()
+	UPhysicsHandleComponent* PhysicsHandle;
+	UPROPERTY()
+	UInputComponent* PlayerInput;
+
 	// Functions.
 	void GetGrabbableObject();
 	void GetPhysicsHandle();
+	void GetPlayerInput();
+	void BindActionsToKeys();
+	void Grab();
+	void Drop();
+	void Throw();
 
 	// Debug helper functions.
 	void DebugLineStuff();
