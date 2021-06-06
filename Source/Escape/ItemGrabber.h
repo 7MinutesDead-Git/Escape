@@ -98,7 +98,7 @@ private:
     FVector GetGrabReachEnd();
     void GetGrabbableObject();
     void GetPhysicsHandle();
-    void MovePhysicsHandleSmoothly(const float DeltaTime);
+    void MovePhysicsHandle();
     void GetPlayerInput();
     void BindActionsToKeys();
     void GrabToggle();

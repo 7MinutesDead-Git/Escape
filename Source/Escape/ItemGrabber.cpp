@@ -4,7 +4,6 @@
 #include "ItemGrabber.h"
 #include "GameFramework/PlayerController.h"
 #include "DrawDebugHelpers.h"
-#include "Physics/ImmediatePhysics/ImmediatePhysicsShared/ImmediatePhysicsCore.h"
 // To give myself a heads up that something is an out parameter.
 #define OUT
 
@@ -44,7 +43,7 @@ void UItemGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 
     // If we're holding an object, then update hold point and move it towards that point.
     if (PhysicsHandle->GrabbedComponent) {
-        MovePhysicsHandleSmoothly(DeltaTime);
+        MovePhysicsHandle();
     }
 
     if (EnableDebugLines) {
@@ -63,6 +62,8 @@ void UItemGrabber::GetPlayerView()
     );
 }
 
+
+// ----------------------------------------------------------------------
 /// Get player view. Return point in front of player based on HoldDistance.
 FVector UItemGrabber::GetHoldPoint()
 {
@@ -70,6 +71,8 @@ FVector UItemGrabber::GetHoldPoint()
     return PlayerView.Location + PlayerView.Rotation.Vector() * HoldDistance;
 }
 
+
+// ----------------------------------------------------------------------
 /// Get player view. Return point in front of player based on GrabReach.
 FVector UItemGrabber::GetGrabReachEnd()
 {
@@ -124,19 +127,14 @@ void UItemGrabber::GetPhysicsHandle()
     }
 }
 
+
 // ---------------------------------------------------------------------
 /// Called every frame. \n
-/// Move Physics Handle of grabbed object smoothly between object's current vector, and hold point vector.
-void UItemGrabber::MovePhysicsHandleSmoothly(const float DeltaTime)
+/// Move Physics Handle of grabbed object smoothly between object's current vector, and hold point vector. \n\n
+void UItemGrabber::MovePhysicsHandle()
 {
-    // Get updated hold point we want to move to (based on player position and look rotation).
     HoldPoint = GetHoldPoint();
-    // Get current position of the object we're holding (needed every frame to smooth).
-    PhysicsHandle->GetTargetLocationAndRotation(GrabbedObject.Location, GrabbedObject.Rotation);
-    // Lerp between these two vectors. Configurable with HoldFollowSpeed.
-    const FVector SmoothedPosition = FMath::VInterpTo(GrabbedObject.Location, HoldPoint, DeltaTime, HoldFollowSpeed);
-    // Set smoothed vector as new target.
-    PhysicsHandle->SetTargetLocation(SmoothedPosition);
+    PhysicsHandle->SetTargetLocation(HoldPoint);
 }
 
 
@@ -224,7 +222,6 @@ void UItemGrabber::Pull()
         HoldDistance -= PushPullStepSize;
     }
 }
-
 
 // --------------------------------------------------------------------
 // Debug helper functions.
