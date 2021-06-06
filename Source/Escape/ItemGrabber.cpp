@@ -4,6 +4,7 @@
 #include "ItemGrabber.h"
 #include "GameFramework/PlayerController.h"
 #include "DrawDebugHelpers.h"
+#include "Physics/ImmediatePhysics/ImmediatePhysicsShared/ImmediatePhysicsCore.h"
 // To give myself a heads up that something is an out parameter.
 #define OUT
 
@@ -29,6 +30,8 @@ void UItemGrabber::BeginPlay()
     GetPhysicsHandle();
     GetPlayerInput();
     BindActionsToKeys();
+
+    HoldDistanceDefault = HoldDistance;
     // ...
 }
 
@@ -41,9 +44,7 @@ void UItemGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 
     // If we're holding an object, then update hold point and move it towards that point.
     if (PhysicsHandle->GrabbedComponent) {
-        HoldPoint = GetHoldPoint();
-        PhysicsHandle->SetTargetLocation(HoldPoint);
-
+        MovePhysicsHandleSmoothly(DeltaTime);
     }
 
     if (EnableDebugLines) {
@@ -123,6 +124,21 @@ void UItemGrabber::GetPhysicsHandle()
     }
 }
 
+// ---------------------------------------------------------------------
+/// Called every frame. \n
+/// Move Physics Handle of grabbed object smoothly between object's current vector, and hold point vector.
+void UItemGrabber::MovePhysicsHandleSmoothly(const float DeltaTime)
+{
+    // Get updated hold point we want to move to (based on player position and look rotation).
+    HoldPoint = GetHoldPoint();
+    // Get current position of the object we're holding (needed every frame to smooth).
+    PhysicsHandle->GetTargetLocationAndRotation(GrabbedObject.Location, GrabbedObject.Rotation);
+    // Lerp between these two vectors. Configurable with HoldFollowSpeed.
+    const FVector SmoothedPosition = FMath::VInterpTo(GrabbedObject.Location, HoldPoint, DeltaTime, HoldFollowSpeed);
+    // Set smoothed vector as new target.
+    PhysicsHandle->SetTargetLocation(SmoothedPosition);
+}
+
 
 // ----------------------------------------------------------------------
 /// Get the InputComponent on the owner (player pawn) of this component (ItemGrabber).
@@ -147,6 +163,8 @@ void UItemGrabber::BindActionsToKeys()
     // (1) Action/input name, (2) KeyEvent type, (3) Object, (4) Point to &address of function.
     PlayerInput->BindAction("Grab", IE_Pressed, this, &UItemGrabber::GrabToggle);
     PlayerInput->BindAction("Throw", IE_Pressed, this, &UItemGrabber::Throw);
+    PlayerInput->BindAction("Push", IE_Pressed, this, &UItemGrabber::Push);
+    PlayerInput->BindAction("Pull", IE_Pressed, this, &UItemGrabber::Pull);
 }
 
 
@@ -160,13 +178,15 @@ void UItemGrabber::GrabToggle()
         if (GrabbableHit.GetActor()) {
             // Then Grab whatever component is there at GrabReachEnd.
             UE_LOG(LogTemp, Warning, TEXT("Grabbed item."));
-            PhysicsHandle->GrabComponentAtLocation(ComponentToGrab, NAME_None, GrabReachEnd);
+            PhysicsHandle->GrabComponentAtLocation(ComponentToGrab, NAME_None, GrabbableHit.Location);
             HoldingItem = true;
         }
     }
     else if (HoldingItem) {
         PhysicsHandle->ReleaseComponent();
         UE_LOG(LogTemp, Warning, TEXT("Dropped item."));
+        // Reset any hold distance adjustments we made with push/pull.
+        HoldDistance = HoldDistanceDefault;
         HoldingItem = false;
     }
 }
@@ -176,9 +196,32 @@ void UItemGrabber::GrabToggle()
 void UItemGrabber::Throw()
 {
     if (HoldingItem) {
-        PhysicsHandle->SetTargetLocation(GetHoldPoint() * ThrowStrength);
+        UE_LOG(LogTemp, Warning, TEXT("Dropped item."));
+        // TODO: Add physics impulse to throw object away from player.
         PhysicsHandle->ReleaseComponent();
+        // Reset any hold distance adjustments we made with push/pull.
+        HoldDistance = HoldDistanceDefault;
         HoldingItem = false;
+    }
+}
+
+// --------------------------------------------------------------------
+/// Push the currently held object farther away.
+void UItemGrabber::Push()
+{
+    if (HoldingItem) {
+        UE_LOG(LogTemp, Warning, TEXT("Pushing object!"));
+        HoldDistance += PushPullStepSize;
+    }
+}
+
+// --------------------------------------------------------------------
+/// Pull the currently held object closer.
+void UItemGrabber::Pull()
+{
+    if (HoldingItem) {
+        UE_LOG(LogTemp, Warning, TEXT("Pulling object!"));
+        HoldDistance -= PushPullStepSize;
     }
 }
 
@@ -186,7 +229,6 @@ void UItemGrabber::Throw()
 // --------------------------------------------------------------------
 // Debug helper functions.
 // --------------------------------------------------------------------
-
 /// Draw debug line for grabby hands, log grabbable object hit.
 void UItemGrabber::DebugViewInfo()
 {
@@ -214,7 +256,8 @@ void UItemGrabber::DebugViewInfo()
     );
 }
 
-/// Notify this component was loaded successfully.
+// --------------------------------------------------------------------
+/// Notify UItemGrabber component was loaded successfully.
 void UItemGrabber::NotifyLoading()
 {
     UE_LOG(LogTemp, Warning,

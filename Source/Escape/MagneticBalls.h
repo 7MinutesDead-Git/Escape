@@ -5,6 +5,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "PhysicsEngine/PhysicsHandleComponent.h"
+
 #include "MagneticBalls.generated.h"
 
 
@@ -14,24 +16,30 @@ class ESCAPE_API UMagneticBalls : public UActorComponent
     GENERATED_BODY()
 
 public:
-    // Sets default values for this component's properties
+    // Sets default values for this component's properties.
     UMagneticBalls();
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
-    // Called when the game starts
+    // Called when the game starts.
     virtual void BeginPlay() override;
 
-public:
+private:
+    /// Our Physics Handle Component added to the actor our MagneticBalls component goes on.
+    UPROPERTY()
+    UPhysicsHandleComponent* BallPhysicsHandle;
+    /// The object we want our magnetic ball to move towards.
     UPROPERTY(EditAnywhere)
     AActor* DestinationObject;
+
     UPROPERTY(EditAnywhere)
-    float MoveSpeed = 0.2f;
-    UPROPERTY(EditAnywhere)
-    float MaxFollowDistance = 20;
+    float FollowUpdateRate = 0.3f;
     float Distance;
+    float Elapsed = 0;
     FVector Destination;
     FVector CurrentPosition;
-    // Called every frame
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-                               FActorComponentTickFunction* ThisTickFunction) override;
+
+    // Functions.
+    void GetPhysicsHandle();
+    void FindAndMoveToTarget();
 };

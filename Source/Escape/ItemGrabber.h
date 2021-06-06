@@ -20,6 +20,15 @@ struct FPlayerView
 
 
 // -----------------------------------------------------------------------
+/// The location/position and rotation of the held object (Physics Handle Component).
+struct FGrabbedObject
+{
+    FVector Location;
+    FRotator Rotation;
+};
+
+
+// -----------------------------------------------------------------------
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ESCAPE_API UItemGrabber : public UActorComponent
 {
@@ -39,6 +48,7 @@ protected:
 private:
     // Variables. ---------------------------------------------------------------------
     FPlayerView PlayerView;
+    FGrabbedObject GrabbedObject;
     FHitResult GrabbableHit;
     FVector GrabReachEnd;
     FVector HoldPoint;
@@ -46,17 +56,22 @@ private:
     bool HoldingItem = false;
     float DoubleClickSafetyTimer;
 
-    // TODO: Find out why this is:
-    /// If GrabReach is larger than HoldDistance, grabbed doesn't follow very well.
     UPROPERTY(EditAnywhere)
-    float GrabReach = 180;
+    float GrabReach = 800;
 
-    /// If GrabReach is larger than HoldDistance, grabbed doesn't follow very well.
     UPROPERTY(EditAnywhere)
     float HoldDistance = 180;
+    float HoldDistanceDefault;
 
     UPROPERTY(EditAnywhere)
-    float ThrowStrength = 1000.f;
+    float PushPullStepSize = 20;
+
+    /// How quickly the held object follows the player.
+    UPROPERTY(EditAnywhere)
+    float HoldFollowSpeed = 100;
+
+    UPROPERTY(EditAnywhere)
+    float ThrowStrength = 1000;
 
     UPROPERTY(EditAnywhere)
     bool EnableDebugLines = false;
@@ -83,10 +98,13 @@ private:
     FVector GetGrabReachEnd();
     void GetGrabbableObject();
     void GetPhysicsHandle();
+    void MovePhysicsHandleSmoothly(const float DeltaTime);
     void GetPlayerInput();
     void BindActionsToKeys();
     void GrabToggle();
     void Throw();
+    void Push();
+    void Pull();
 
     // Debug helper functions. ---------------------------------------------------------
     void DebugViewInfo();
