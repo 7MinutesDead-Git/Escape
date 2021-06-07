@@ -51,7 +51,6 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     // If no errors have occurred, then let's go.
 	if (Ready) {
-
 		Elapsed += DeltaTime;
 	    // We can save some performance by not doing all of this every single frame.
 	    if (Elapsed >= UpdateRate) {
@@ -129,12 +128,12 @@ float UOpenDoor::GetTotalMassInVolume()
             ObjectCount = 0;
             UE_LOG(LogTemp, Warning, TEXT("Total Mass: %f kg"), TotalMass);
 
-            FString Names = "in chamber: ";
+            FString Names = "";
             for (AActor* Thing : StuffInChamber) {
                 Names += *Thing->GetName() + FString(", ");
                 ObjectCount += 1;
             }
-            UE_LOG(LogTemp, Warning, TEXT("%i objects %s"), ObjectCount, *Names);
+            UE_LOG(LogTemp, Warning, TEXT("%i objects in chamber: %s"), ObjectCount, *Names);
         }
     }
     return TotalMass;
@@ -156,7 +155,7 @@ FLinearColor UOpenDoor::ColorLightByMass() const
 }
 
 // -------------------------------------------------------------------------------
-/// Start our logical lights at 0 brightness. Trip not ready flag if lights haven't been set in the editor.
+/// Start our logical lights at 0 brightness. Trip not-ready flag if any light hasn't been set in the editor.
 void UOpenDoor::InitializeLights()
 {
     ImportantLights.Add(ChamberLight);

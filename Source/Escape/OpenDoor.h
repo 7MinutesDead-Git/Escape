@@ -75,8 +75,9 @@ private:
 
     // Debug ---------------------------------------------------------------------------------------
     UPROPERTY(EditAnywhere) bool EnableDebugMessages = false;
-    /// Tripped to false if any crash-causing errors are found (ie trying to access null pointers).
+    /// Tripped if any crash-causing errors are found (ie trying to access null pointers).
     bool Ready = true;
+    /// Tripped once user has been warned of potentially fatal errors (prevents log spam).
     bool Warned = false;
     /// Prevents log spam from light color update attempts when EnableDebugMessages is true.
     bool DebugColorWarning = false;
