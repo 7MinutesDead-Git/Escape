@@ -31,17 +31,16 @@ void UOpenDoor::BeginPlay()
 	ClosedDoorPos = DoorRotation.Yaw;
 	OpenDoorPos = DoorRotation.Yaw + OpenAngle;
 
-    // Not setting PressurePlate can cause a crash.
+    InitializeLights();
+
+    // Not setting ChamberVolume can cause a crash.
 	if (!ChamberVolume) {
+	    Ready = false;
 		UE_LOG(LogTemp, Error,
-		    TEXT("Pressure Plate hasn't been set for %s! Check OpenDoor component."),
+		    TEXT("OpenDoor component on %s is missing a Trigger Volume! Assign in editor."),
 		    *GetOwner()->GetName()
 		    );
 	}
-
-    ChamberLight->SetBrightness(0);
-    SignLightBlue->SetBrightness(0);
-    SignLightOrange->SetBrightness(0);
 }
 
 
@@ -51,36 +50,52 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-
-	if (ChamberVolume) {
+    // If no errors have occurred, then let's go.
+	if (Ready) {
 		Elapsed += DeltaTime;
-
 	    // We can save some performance by not doing all of this every single frame.
 	    if (Elapsed >= UpdateRate) {
 	        TotalMassInKg = GetTotalMassInVolume();
 	        // Used for scaling values from 0 to 1.
 	        MassRatio = TotalMassInKg / MassToOpenDoor;
-
-	        UE_LOG(LogTemp, Warning, TEXT("Total Mass: %f kg"), TotalMassInKg)
-
+	        // Light adjustments.
 	        LightIntensity = MassRatio * 0.3f;
 	        ChamberLight->SetBrightness(LightIntensity);
 	        ChamberLight->SetLightColor(ColorLightByMass());
 	        SignLightOrange->SetBrightness(LightIntensity);
-            // Reset timer for next ping/update.
-	        Elapsed = 0;
-	    }
+	        // Debug check.
+	        if (EnableDebugMessages) {
+	            UE_LOG(LogTemp, Warning,
+                    TEXT("%s color set to %s"),
+                    *ChamberLight->GetName(),
+                    *ChamberLight->GetLightColor().ToString());
 
+	            UE_LOG(LogTemp, Warning,
+                    TEXT("Total Mass: %f kg"),
+                    TotalMassInKg);
+	        }
+	    }
+        // If we have enough stuff in the chamber, we can open.
 	    if (TotalMassInKg >= MassToOpenDoor) {
 	        OpenTheDoor(DeltaTime);
 	        SignLightBlue->SetBrightness(0.3f);
 	        SignLightOrange->SetBrightness(0);
+	        ChamberLight->SetBrightness(10);
+	        ChamberLight->SetLightColor(White);
 	    }
+	    // Otherwise keep the door closed. We can also close if items leave the chamber.
 	    else {
 	        CloseTheDoor(DeltaTime);
 	        SignLightBlue->SetBrightness(0);
 	    }
+
 	}
+    // Otherwise we've encountered errors during setup,
+    // so we avoid above loop to prevent editor crashes.
+    else if (!Warned) {
+        UE_LOG(LogTemp, Error, TEXT("Most functionality has been disabled until errors are fixed. Please check log."));
+        Warned = true;
+    }
 }
 
 // -------------------------------------------------------------------------------
@@ -123,7 +138,10 @@ float UOpenDoor::GetTotalMassInVolume()
         Count += 1;
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("Objects in field: %i"), Count);     // DEBUG line.
+    if (EnableDebugMessages) {
+        UE_LOG(LogTemp, Warning, TEXT("Objects in field: %i"), Count);
+    }
+
     return TotalMass;
 }
 
@@ -138,5 +156,28 @@ FLinearColor UOpenDoor::ColorLightByMass() const
     float Alpha = 1;
     // Red, Green, Blue, Alpha.  Red will increase as our mass increases.
     const FLinearColor LightColor = {Red, Green, Blue, Alpha};
+
     return LightColor;
+}
+
+// -------------------------------------------------------------------------------
+/// Start our logical lights at 0 brightness. Trip not ready flag if lights haven't been set in the editor.
+void UOpenDoor::InitializeLights()
+{
+    ImportantLights.Add(ChamberLight);
+    ImportantLights.Add(SignLightBlue);
+    ImportantLights.Add(SignLightOrange);
+
+    for (ALight* Light : ImportantLights) {
+        if (!Light) {
+            Ready = false;
+
+            UE_LOG(LogTemp, Error,
+                TEXT("OpenDoor component on %s is missing a light! Assign in editor."),
+                *GetOwner()->GetName());
+        }
+        else {
+            Light->SetBrightness(0);
+        }
+    }
 }

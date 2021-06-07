@@ -171,17 +171,18 @@ void UItemGrabber::GrabToggle()
 {
     if (!HoldingItem) {
         GetGrabbableObject();
+        AActor* GrabbableActor = GrabbableHit.GetActor();
         // If GrabbableHit has been hit by our line trace in GetGrabbableObject..
-        if (GrabbableHit.GetActor()) {
+        if (GrabbableActor) {
             // Then Grab whatever component is there at GrabReachEnd.
-            UE_LOG(LogTemp, Warning, TEXT("Grabbed item."));
+            UE_LOG(LogTemp, Log, TEXT("Grabbed item."));
             PhysicsHandle->GrabComponentAtLocation(ComponentToGrab, NAME_None, GrabbableHit.Location);
             HoldingItem = true;
         }
     }
     else if (HoldingItem) {
         PhysicsHandle->ReleaseComponent();
-        UE_LOG(LogTemp, Warning, TEXT("Dropped item."));
+        UE_LOG(LogTemp, Log, TEXT("Dropped item."));
         // Reset any hold distance adjustments we made with push/pull.
         HoldDistance = HoldDistanceDefault;
         HoldingItem = false;
@@ -193,7 +194,7 @@ void UItemGrabber::GrabToggle()
 void UItemGrabber::Throw()
 {
     if (HoldingItem) {
-        UE_LOG(LogTemp, Warning, TEXT("Dropped item."));
+        UE_LOG(LogTemp, Log, TEXT("Dropped item."));
         // TODO: Add physics impulse to throw object away from player.
         PhysicsHandle->ReleaseComponent();
         // Reset any hold distance adjustments we made with push/pull.
@@ -207,7 +208,7 @@ void UItemGrabber::Throw()
 void UItemGrabber::Push()
 {
     if (HoldingItem) {
-        UE_LOG(LogTemp, Warning, TEXT("Pushing object!"));
+        UE_LOG(LogTemp, Log, TEXT("Pushing object!"));
         HoldDistance += PushPullStepSize;
     }
 }
@@ -217,7 +218,7 @@ void UItemGrabber::Push()
 void UItemGrabber::Pull()
 {
     if (HoldingItem) {
-        UE_LOG(LogTemp, Warning, TEXT("Pulling object!"));
+        UE_LOG(LogTemp, Log, TEXT("Pulling object!"));
         HoldDistance -= PushPullStepSize;
     }
 }
@@ -241,12 +242,12 @@ void UItemGrabber::DebugViewInfo()
         2                        // Thickness.
     );
 
-    UE_LOG(LogTemp, Warning,
+    UE_LOG(LogTemp, Log,
            TEXT("Physics target location: %s."),
            *PhysicsHandle->TargetTransform.GetLocation().ToCompactString()
     );
 
-    UE_LOG(LogTemp, Warning,
+    UE_LOG(LogTemp, Log,
            TEXT("HoldPoint: %s"),
            *HoldPoint.ToCompactString()
     );

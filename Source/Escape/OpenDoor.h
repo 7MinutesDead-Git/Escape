@@ -36,15 +36,20 @@ private:
 	void CloseTheDoor(float DeltaTime);
     float GetTotalMassInVolume();
     FLinearColor ColorLightByMass() const;
+    void InitializeLights();
     float TotalMassInKg = 0;
 	float ClosedDoorPos;
 	float OpenDoorPos;
     float Elapsed;
     float LightIntensity = 0;
     float MassRatio;
+    /// Tripped to false if any crash-causing errors are found (ie trying to access null pointers).
+    bool Ready = true;
+    bool Warned = false;
 
     FRotator DoorRotation;
     FRotator SmoothedTargetRotation;
+    FLinearColor White = {1, 1, 1, 1};
 
     /// An array of actors inside the chamber (if they have overlap events enabled).
     UPROPERTY() TArray<AActor*> StuffInChamber;
@@ -54,6 +59,8 @@ private:
     UPROPERTY(EditAnywhere) ALight* SignLightOrange;
     UPROPERTY(EditAnywhere) ALight* SignLightBlue;
 
+    UPROPERTY() TArray<ALight*> ImportantLights;
+
     /// How often in seconds to update volume weight checks (0 will update every frame).
     UPROPERTY(EditAnywhere) float UpdateRate = 1;
 	UPROPERTY(EditAnywhere) float OpenAngle = 90;
@@ -61,6 +68,8 @@ private:
     UPROPERTY(EditAnywhere) float MassToOpenDoor = 89;
 	UPROPERTY(EditAnywhere) float OpenRate = 1;
 	UPROPERTY(EditAnywhere) float DoorOpenTime = 1;
+
+    UPROPERTY(EditAnywhere) bool EnableDebugMessages = false;
 
 
 };
