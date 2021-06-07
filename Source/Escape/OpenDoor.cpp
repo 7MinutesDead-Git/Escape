@@ -49,46 +49,28 @@ void UOpenDoor::BeginPlay()
 void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
     // If no errors have occurred, then let's go.
 	if (Ready) {
+
 		Elapsed += DeltaTime;
 	    // We can save some performance by not doing all of this every single frame.
 	    if (Elapsed >= UpdateRate) {
 	        TotalMassInKg = GetTotalMassInVolume();
 	        // Used for scaling values from 0 to 1.
 	        MassRatio = TotalMassInKg / MassToOpenDoor;
-	        // Light adjustments.
-	        LightIntensity = MassRatio * 0.3f;
-	        ChamberLight->SetBrightness(LightIntensity);
-	        ChamberLight->SetLightColor(ColorLightByMass());
-	        SignLightOrange->SetBrightness(LightIntensity);
-	        // Debug check.
-	        if (EnableDebugMessages) {
-	            UE_LOG(LogTemp, Warning,
-                    TEXT("%s color set to %s"),
-                    *ChamberLight->GetName(),
-                    *ChamberLight->GetLightColor().ToString());
-
-	            UE_LOG(LogTemp, Warning,
-                    TEXT("Total Mass: %f kg"),
-                    TotalMassInKg);
-	        }
+	        AdjustLights();
 	    }
+
         // If we have enough stuff in the chamber, we can open.
 	    if (TotalMassInKg >= MassToOpenDoor) {
 	        OpenTheDoor(DeltaTime);
-	        SignLightBlue->SetBrightness(0.3f);
-	        SignLightOrange->SetBrightness(0);
-	        ChamberLight->SetBrightness(10);
-	        ChamberLight->SetLightColor(White);
+	        AdjustLightsOpened();
 	    }
 	    // Otherwise keep the door closed. We can also close if items leave the chamber.
 	    else {
 	        CloseTheDoor(DeltaTime);
-	        SignLightBlue->SetBrightness(0);
+	        AdjustLightsShut();
 	    }
-
 	}
     // Otherwise we've encountered errors during setup,
     // so we avoid above loop to prevent editor crashes.
@@ -124,24 +106,37 @@ void UOpenDoor::CloseTheDoor(float DeltaTime)
 /// "generate overlap event" ticked, or they won't contribute their mass at all.
 float UOpenDoor::GetTotalMassInVolume()
 {
+    // Get pre-existing length of StuffInChamber array to see if anything changed.
+    const int32 CurrentLength = StuffInChamber.Num();
     // Fill our array with any AActors in the trigger volume.
     ChamberVolume->GetOverlappingActors(OUT StuffInChamber);
-    float TotalMass = 0;
-    int Count = 0;
 
-    // For each thing in volume:
-    for (AActor* Thing : StuffInChamber) {
-        // Get the mass of current thing.
-        const float MassOfThing = Thing->FindComponentByClass<UStaticMeshComponent>()->GetMass();
-        // Add it to the total mass.
-        TotalMass += MassOfThing;
-        Count += 1;
+    // We don't need to calculate the total mass again if our count is identical
+    // to the last call (ie no new objects added or removed).
+    if (CurrentLength != StuffInChamber.Num()) {
+        TotalMass = 0;
+        DebugColorWarning = false;
+
+        for (AActor* Thing : StuffInChamber) {
+            // Get the mass of current thing.
+            const float MassOfThing = Thing->FindComponentByClass<UStaticMeshComponent>()->GetMass();
+            // Add it to the total mass.
+            TotalMass += MassOfThing;
+        }
+
+        // Debug toggle.
+        if (EnableDebugMessages) {
+            ObjectCount = 0;
+            UE_LOG(LogTemp, Warning, TEXT("Total Mass: %f kg"), TotalMass);
+
+            FString Names = "in chamber: ";
+            for (AActor* Thing : StuffInChamber) {
+                Names += *Thing->GetName() + FString(", ");
+                ObjectCount += 1;
+            }
+            UE_LOG(LogTemp, Warning, TEXT("%i objects %s"), ObjectCount, *Names);
+        }
     }
-
-    if (EnableDebugMessages) {
-        UE_LOG(LogTemp, Warning, TEXT("Objects in field: %i"), Count);
-    }
-
     return TotalMass;
 }
 
@@ -171,7 +166,6 @@ void UOpenDoor::InitializeLights()
     for (ALight* Light : ImportantLights) {
         if (!Light) {
             Ready = false;
-
             UE_LOG(LogTemp, Error,
                 TEXT("OpenDoor component on %s is missing a light! Assign in editor."),
                 *GetOwner()->GetName());
@@ -180,4 +174,41 @@ void UOpenDoor::InitializeLights()
             Light->SetBrightness(0);
         }
     }
+}
+
+// -------------------------------------------------------------------------------
+///Adjust light color and brightness based on mass present.
+void UOpenDoor::AdjustLights()
+{
+    LightIntensity = MassRatio * 0.3f;
+    ChamberLight->SetBrightness(LightIntensity);
+    ChamberLight->SetLightColor(ColorLightByMass());
+    SignLightOrange->SetBrightness(LightIntensity);
+
+    // Debug toggle.
+    if (EnableDebugMessages && DebugColorWarning == false) {
+        UE_LOG(LogTemp, Warning,
+            TEXT("%s color set to %s"),
+            *ChamberLight->GetName(),
+            *ChamberLight->GetLightColor().ToString());
+        DebugColorWarning = true;
+    }
+}
+
+
+// -------------------------------------------------------------------------------
+///Adjust light color and brightness for complete state (door open).
+void UOpenDoor::AdjustLightsOpened()
+{
+    SignLightBlue->SetBrightness(0.3f);
+    SignLightOrange->SetBrightness(0);
+    ChamberLight->SetBrightness(10);
+    ChamberLight->SetLightColor(White);
+}
+
+// -------------------------------------------------------------------------------
+/// Reset hard-coded changes from AdjustLightsOpened(), if door is shut after being opened.
+void UOpenDoor::AdjustLightsShut()
+{
+    SignLightBlue->SetBrightness(0);
 }
