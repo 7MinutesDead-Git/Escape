@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Engine/Light.h"
 #include "Engine/TriggerVolume.h"
 #include "Math/Rotator.h"
 #include "OpenDoor.generated.h"
@@ -33,18 +34,33 @@ private:
 	// -------------------------------------------------------------------------
 	void OpenTheDoor(float DeltaTime);
 	void CloseTheDoor(float DeltaTime);
+    float GetTotalMassInVolume();
+    FLinearColor ColorLightByMass() const;
+    float TotalMassInKg = 0;
 	float ClosedDoorPos;
 	float OpenDoorPos;
+    float Elapsed;
+    float LightIntensity = 0;
+    float MassRatio;
 
+    FRotator DoorRotation;
+    FRotator SmoothedTargetRotation;
+
+    /// An array of actors inside the chamber (if they have overlap events enabled).
+    UPROPERTY() TArray<AActor*> StuffInChamber;
+
+    UPROPERTY(EditAnywhere) ATriggerVolume* ChamberVolume;
+    UPROPERTY(EditAnywhere) ALight* ChamberLight;
+    UPROPERTY(EditAnywhere) ALight* SignLightOrange;
+    UPROPERTY(EditAnywhere) ALight* SignLightBlue;
+
+    /// How often in seconds to update volume weight checks (0 will update every frame).
+    UPROPERTY(EditAnywhere) float UpdateRate = 1;
 	UPROPERTY(EditAnywhere) float OpenAngle = 90;
 
-	FRotator DoorRotation;
-	FRotator SmoothedTargetRotation;
-
+    UPROPERTY(EditAnywhere) float MassToOpenDoor = 89;
 	UPROPERTY(EditAnywhere) float OpenRate = 1;
 	UPROPERTY(EditAnywhere) float DoorOpenTime = 1;
-	UPROPERTY(EditAnywhere) ATriggerVolume* PressurePlate;
-	UPROPERTY(EditAnywhere) APawn* PlayerPawn;
-	float Elapsed;
+
 
 };

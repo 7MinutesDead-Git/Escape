@@ -157,7 +157,6 @@ void UItemGrabber::GetPlayerInput()
 /// Bind each relevant function to each of our player inputs.
 void UItemGrabber::BindActionsToKeys()
 {
-    // Run Grab function when "Grab" key is pressed.
     // (1) Action/input name, (2) KeyEvent type, (3) Object, (4) Point to &address of function.
     PlayerInput->BindAction("Grab", IE_Pressed, this, &UItemGrabber::GrabToggle);
     PlayerInput->BindAction("Throw", IE_Pressed, this, &UItemGrabber::Throw);

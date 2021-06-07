@@ -56,20 +56,20 @@ private:
     bool HoldingItem = false;
     float DoubleClickSafetyTimer;
 
+    /// How long your psychic arm is.
     UPROPERTY(EditAnywhere)
     float GrabReach = 800;
 
+    /// How far in front of the player an object is held once grabbed.
     UPROPERTY(EditAnywhere)
     float HoldDistance = 180;
     float HoldDistanceDefault;
 
+    /// Step size for held object push and pull distance.
     UPROPERTY(EditAnywhere)
     float PushPullStepSize = 20;
 
-    /// How quickly the held object follows the player.
-    UPROPERTY(EditAnywhere)
-    float HoldFollowSpeed = 100;
-
+    /// Strength of forward impulse when throwing object rather than dropping.
     UPROPERTY(EditAnywhere)
     float ThrowStrength = 1000;
 
@@ -80,7 +80,7 @@ private:
     UPROPERTY(EditAnywhere)
     APlayerController* Player;
 
-    /// Our Physics Handle Component added via Blueprint to the player pawn.
+    /// Our Physics Handle Component added to the player pawn blueprint.
     UPROPERTY()
     UPhysicsHandleComponent* PhysicsHandle;
 
@@ -97,10 +97,13 @@ private:
     FVector GetHoldPoint();
     FVector GetGrabReachEnd();
     void GetGrabbableObject();
+
     void GetPhysicsHandle();
     void MovePhysicsHandle();
+
     void GetPlayerInput();
     void BindActionsToKeys();
+
     void GrabToggle();
     void Throw();
     void Push();

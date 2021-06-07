@@ -36,11 +36,11 @@ void UMagneticBalls::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
     if (DestinationObject) {
         Elapsed += DeltaTime;
 
+        // To cut down on expensive function calls just a bit.
         if (Elapsed > FollowUpdateRate) {
             FindAndMoveToTarget();
             Elapsed = 0;
         }
-
         BallPhysicsHandle->SetTargetLocation(Destination);
     }
     // ...
