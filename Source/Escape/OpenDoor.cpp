@@ -3,6 +3,7 @@
 
 
 #include "OpenDoor.h"
+#include "Components/AudioComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "BehaviorTree/BehaviorTreeTypes.h"
 #include "GameFramework/Actor.h"
@@ -26,6 +27,7 @@ void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
 	Elapsed = 0;
+    OwnerName = GetOwner()->GetName();
 
 	DoorRotation = GetOwner()->GetActorRotation();
 	ClosedDoorPos = DoorRotation.Yaw;
@@ -38,7 +40,7 @@ void UOpenDoor::BeginPlay()
 	    Ready = false;
 		UE_LOG(LogTemp, Error,
 		    TEXT("OpenDoor component on %s is missing a Trigger Volume! Assign in editor."),
-		    *GetOwner()->GetName()
+		    *OwnerName
 		    );
 	}
 }
@@ -97,7 +99,6 @@ void UOpenDoor::CloseTheDoor(float DeltaTime)
 	SmoothedTargetRotation.Yaw = FMath::FInterpTo(DoorRotation.Yaw, ClosedDoorPos, DeltaTime, OpenRate);
 	GetOwner()->SetActorRotation(SmoothedTargetRotation);
 }
-
 
 // -------------------------------------------------------------------------------
 /// Get the total mass of all actors in the trigger volume. \n\n
@@ -167,7 +168,7 @@ void UOpenDoor::InitializeLights()
             Ready = false;
             UE_LOG(LogTemp, Error,
                 TEXT("OpenDoor component on %s is missing a light! Assign in editor."),
-                *GetOwner()->GetName());
+                *OwnerName);
         }
         else {
             Light->SetBrightness(0);
@@ -194,7 +195,6 @@ void UOpenDoor::AdjustLights()
     }
 }
 
-
 // -------------------------------------------------------------------------------
 ///Adjust light color and brightness for complete state (door open).
 void UOpenDoor::AdjustLightsOpened()
@@ -210,4 +210,18 @@ void UOpenDoor::AdjustLightsOpened()
 void UOpenDoor::AdjustLightsShut()
 {
     SignLightBlue->SetBrightness(0);
+}
+
+// -------------------------------------------------------------------------------
+/// Get the audio component for playing a sound effects/cues for the door.
+void UOpenDoor::FindAudioComponent()
+{
+    DoorSound = GetOwner()->FindComponentByClass<UAudioComponent>();
+
+    if (!DoorSound) {
+        Ready = false;
+        UE_LOG(LogTemp, Error,
+            TEXT("OpenDoor component on %s is missing audio component! Assign in editor."),
+            *OwnerName);
+    }
 }

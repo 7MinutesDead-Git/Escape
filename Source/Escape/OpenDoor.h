@@ -40,8 +40,10 @@ private:
     void AdjustLights();
     void AdjustLightsOpened();
     void AdjustLightsShut();
+    void FindAudioComponent();
 
     // Variables. ----------------------------------------------------------------------------------
+    FString OwnerName;
     float TotalMassInKg = 0;
 	float ClosedDoorPos;
 	float OpenDoorPos;
@@ -55,11 +57,14 @@ private:
     FRotator SmoothedTargetRotation;
     FLinearColor White = {1, 1, 1, 1};
 
+    // Pointers ------------------------------------------------------------------------------------
     /// An array of actors inside the chamber (if they have overlap events enabled).
     UPROPERTY() TArray<AActor*> StuffInChamber;
+    /// Array of our scripted lights for ease of iterating over.
     UPROPERTY() TArray<ALight*> ImportantLights;
 
-    // Pointers ------------------------------------------------------------------------------------
+    UPROPERTY() UAudioComponent* DoorSound;
+
     UPROPERTY(EditAnywhere) ATriggerVolume* ChamberVolume;
     UPROPERTY(EditAnywhere) ALight* ChamberLight;
     UPROPERTY(EditAnywhere) ALight* SignLightOrange;

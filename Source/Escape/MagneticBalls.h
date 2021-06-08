@@ -10,6 +10,15 @@
 #include "MagneticBalls.generated.h"
 
 
+/// Contains AActor pointer to Ball, and it's distance in float.
+USTRUCT()
+struct FBallDistances
+{
+    GENERATED_BODY()
+    UPROPERTY() AActor* Ball;
+    float Distance;
+};
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ESCAPE_API UMagneticBalls : public UActorComponent
 {
@@ -20,26 +29,44 @@ public:
     UMagneticBalls();
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+    /// Object grabbed by player via ItemGrabber component.
+    UPROPERTY() UPrimitiveComponent* GrabbedObject = nullptr;
+
 protected:
     // Called when the game starts.
     virtual void BeginPlay() override;
 
 private:
     /// Our Physics Handle Component added to the actor our MagneticBalls component goes on.
-    UPROPERTY()
-    UPhysicsHandleComponent* BallPhysicsHandle;
-    /// The object we want our magnetic ball to move towards.
-    UPROPERTY(EditAnywhere)
-    AActor* DestinationObject;
+    UPROPERTY() UPhysicsHandleComponent* BallPhysicsHandle;
+    UPROPERTY() TArray<AActor*> BallsInLevel;
+    UPROPERTY() TArray<FBallDistances> BallsAndDistances;
+    /// Reference to player pawn (DefaultPawnBP) that will have relevant components attached.
+    UPROPERTY() APawn* PlayerPawn;
+    /// Reference to player controller's physics handle.
+    UPROPERTY() UPhysicsHandleComponent* PlayerPhysicsHandle;
 
-    UPROPERTY(EditAnywhere)
-    float FollowUpdateRate = 0.3f;
+    UPROPERTY(EditAnywhere) float UpdateRate = 0.3f;
+    UPROPERTY(EditAnywhere) float FollowSpeed = 5;
+    UPROPERTY(EditAnywhere) bool EnableDebugView = false;
     float Distance;
     float Elapsed = 0;
     FVector Destination;
     FVector CurrentPosition;
+    FHitResult Bump;
+    UPROPERTY() TArray<AActor*> ClosestBalls;
+
 
     // Functions.
+    FVector SetDestination();
+    bool PlayerHoldingItem();
+    /// Get physics handle from owner.
     void GetPhysicsHandle();
-    void FindAndMoveToTarget();
+    /// Find the closest AActor* Ball in a list of FBallDistances pairs and return that AActor*.
+    TArray<AActor*> FindClosestBalls(TArray<FBallDistances>);
+    /// Get array of AActor* balls in the level and return it.
+    TArray<AActor*> GetAllMagneticBalls();
+    /// Calculate distance from owner to each ball, and store reference to ball and the distance. \n
+    /// Return new array of Balls and Distances.
+    TArray<FBallDistances> GetBallDistancePairs();
 };
