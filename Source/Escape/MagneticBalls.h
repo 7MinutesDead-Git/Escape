@@ -48,7 +48,9 @@ private:
 
     UPROPERTY(EditAnywhere) float UpdateRate = 0.3f;
     UPROPERTY(EditAnywhere) float FollowSpeed = 5;
+    UPROPERTY(EditAnywhere) float MaxFollowDistance = 5;
     UPROPERTY(EditAnywhere) bool EnableDebugView = false;
+    UPROPERTY(EditAnywhere) FColor DebugLineColor;
     float Distance;
     float Elapsed = 0;
     FVector Destination;
@@ -58,7 +60,7 @@ private:
 
 
     // Functions.
-    FVector SetDestination();
+    void SetDestination();
     bool PlayerHoldingItem();
     /// Get physics handle from owner.
     void GetPhysicsHandle();

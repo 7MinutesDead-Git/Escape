@@ -1,13 +1,17 @@
 // Copyright 2021, Alex Gulikers, 7 Minutes Dead.
 // Although these are mostly notes for reference to myself, so you are welcome to pick it apart!
 
-// https://stackoverflow.com/questions/12934213/how-to-find-out-geometric-median
-/* How to find the middle point between two vectors.
+/* https://stackoverflow.com/questions/12934213/how-to-find-out-geometric-median
+ * How to find the middle point between two vectors.
  *  (End - Start) = The direction.
  *  (End - Start) / 2 = In between the two vectors.
 */
 
+//
+
 #include "MagneticBalls.h"
+
+#include <activation.h>
 
 #include "DrawDebugHelpers.h"
 #include "EngineUtils.h"
@@ -38,11 +42,14 @@ void UMagneticBalls::BeginPlay()
     }
 
     GetPhysicsHandle();
+    // TODO:
+    //  This should be run *once* by some other script,
+    //  not every time for every instance of MagneticBalls.
     BallsInLevel = GetAllMagneticBalls();
 
     // Temporary initial setup before frame.
-    Destination = SetDestination();
     CurrentPosition = GetOwner()->GetActorLocation();
+    SetDestination();
 }
 
 
@@ -51,43 +58,31 @@ void UMagneticBalls::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    Elapsed += DeltaTime;
-
-    CurrentPosition = GetOwner()->GetActorLocation();
-
-    // Probably shouldn't traverse our array of balls every single frame.
-    if (Elapsed > UpdateRate) {
-        Elapsed = 0;
-        CurrentPosition = GetOwner()->GetActorLocation();
-        Destination = SetDestination();
-    }
-
-    FVector Smoothed = FMath::VInterpTo(CurrentPosition, Destination, DeltaTime, FollowSpeed);
-
     // All of this is to ensure we don't do access violations on null pointers, like when
     // the player isn't holding anything.
     if (PlayerHoldingItem()) {
-        if (PlayerPhysicsHandle->GrabbedComponent->GetOwner()->GetName() != GetOwner()->GetName()) {
-            // If the player isn't holding THIS object, continue to move.
-            GetOwner()->K2_SetActorLocation(Smoothed, true, OUT Bump, false);
+        FString GrabbedObjectName = PlayerPhysicsHandle->GrabbedComponent->GetOwner()->GetName();
+
+        if (GrabbedObjectName == GetOwner()->GetName()) {
+            BallPhysicsHandle->ReleaseComponent();
         }
     }
-    else {
-        // If the player isn't grabbing any object, continue to move.
-        GetOwner()->K2_SetActorLocation(Smoothed, true, OUT Bump, false);
-    }
+
+    CurrentPosition = GetOwner()->GetActorLocation();
+    SetDestination();
 
     if (EnableDebugView) {
-        FColor Color;
+        FRotator TargetRotation;
+        BallPhysicsHandle->GetTargetLocationAndRotation(OUT Destination, OUT TargetRotation);
         DrawDebugLine(
             GetWorld(),              // InWorld.
             CurrentPosition,         // LineStart.
             Destination,             // LineEnd.
-            Color.FromHex("00FF15"), // Color.
+            DebugLineColor,          // Color.
             false,                   // PersistentLines.
-            1,                       // LifeTime.
+            0.1,                     // LifeTime.
             0,                       // DepthPriority
-            2                        // Thickness.
+            1                        // Thickness.
         );
 
     }
@@ -112,17 +107,22 @@ TArray<AActor*> UMagneticBalls::FindClosestBalls(TArray<FBallDistances> ListOfBa
 {
     FBallDistances Closest;
     FBallDistances SecondClosest;
+
+    int32 Count = 0;
+
     TArray<AActor*> Results;
     bool FirstCheck = true;
 
     for (FBallDistances Ball: ListOfBalls) {
+        Count += 1;
+
         if (FirstCheck) {
             Closest.Ball = Ball.Ball;
             Closest.Distance = Ball.Distance;
             FirstCheck = false;
         }
         else if (Ball.Distance < Closest.Distance) {
-            // Push 1st down to 2nd.
+            // Push 1st down to 2nd, if it's not itself.
             SecondClosest.Ball = Closest.Ball;
             // Push newest up to 1st.
             Closest.Ball = Ball.Ball;
@@ -130,16 +130,9 @@ TArray<AActor*> UMagneticBalls::FindClosestBalls(TArray<FBallDistances> ListOfBa
         }
     }
 
-    if (!Closest.Ball) {
-        UE_LOG(LogTemp, Warning, TEXT("Closest.Ball is null!!"))
-    }
-    if (!SecondClosest.Ball) {
-        UE_LOG(LogTemp, Warning, TEXT("SecondClosest.Ball is null!!"))
-    }
-
     // Order matters I think? We'll be calculating the midpoint vector between the two.
-    Results.Add(Closest.Ball);
-    Results.Add(SecondClosest.Ball);
+    Results.Push(Closest.Ball);
+    Results.Push(SecondClosest.Ball);
 
     return Results;
 
@@ -148,23 +141,24 @@ TArray<AActor*> UMagneticBalls::FindClosestBalls(TArray<FBallDistances> ListOfBa
 // -----------------------------------------------------------------------------
 /// Retrieve all actors whose name starts with "MagneticBall". Return TArray.
 /// \n Not very fool proof, but it works for now.
-/// \n\n TODO: Replace current method with checking for component or tag instead.
 TArray<AActor*> UMagneticBalls::GetAllMagneticBalls()
 {
-    FString ThisObjectName = *GetOwner()->GetName();
+    const uint32 ThisObjectID = GetOwner()->GetUniqueID();
     TArray<AActor*> Balls;
 
     // Find all objects with UMagneticBalls component. Add them to our array.
     for (TActorIterator<AActor> Actor(GetWorld()); Actor; ++Actor) {
-        // TODO: StaticMeshes are sliding into this list causing crashes. Need to fix.
-        // TODO: Try tags maybe?
-        if (Actor->GetName().StartsWith("MagneticBall")) {
 
+        // StaticMeshes are sliding into this list causing crashes.
+        // If "AActor" has picked up something like StaticMesh, then GetOwner won't be null.
+        // TODO: Replace this with a better solution.
+        if (Actor->GetName().StartsWith("MagneticBall") && Actor->GetOwner() == nullptr) {
             // Skip itself to avoid marking itself as closest.
-            if (Actor->GetName() == ThisObjectName) {
+            if (Actor->GetUniqueID() == ThisObjectID) {
                 continue;
             }
             // Make sure we add the pointer to the list, not the actual object.
+            UE_LOG(LogTemp, Warning, TEXT("ADDING TO LIST: %s"), *Actor->GetName());
             Balls.Add(*Actor);
         }
     }
@@ -191,7 +185,6 @@ TArray<FBallDistances> UMagneticBalls::GetBallDistancePairs()
             FBallDistances ThisBall;
             ThisBall.Ball = Ball;
             ThisBall.Distance = DistanceToBall;
-
             Dict.Add(ThisBall);
         }
         else {
@@ -204,27 +197,17 @@ TArray<FBallDistances> UMagneticBalls::GetBallDistancePairs()
 
 // -----------------------------------------------------------------------------
 /// Set destination based on two closest balls.
-FVector UMagneticBalls::SetDestination()
+void UMagneticBalls::SetDestination()
 {
     BallsAndDistances = GetBallDistancePairs();
     ClosestBalls = FindClosestBalls(BallsAndDistances);
-    AActor* BallOne = ClosestBalls[0];
-    AActor* BallTwo = ClosestBalls[1];
 
-    if (!BallOne) {
-        UE_LOG(LogTemp, Error, TEXT("BallOne is null!"));
-        return FVector(0, 0, 0);
-    }
+    UStaticMeshComponent* ClosestBallMesh = ClosestBalls[0]->FindComponentByClass<UStaticMeshComponent>();
+    FVector ClosestBallLocation = ClosestBalls[0]->GetActorLocation();
+    BallPhysicsHandle->GrabComponentAtLocation(ClosestBallMesh, NAME_None, ClosestBallLocation);
+    // TODO: Causing some weird but interesting configurations.
+    BallPhysicsHandle->SetTargetLocation(CurrentPosition - ClosestBallLocation / 2);
 
-    if (!BallTwo) {
-        UE_LOG(LogTemp, Error, TEXT("BallTwo is null!"));
-        return FVector(0, 0, 0);
-    }
-
-    // TODO: For some reason, UStaticMesh* is getting into my AActor* arrays on some frames.
-    // GetActorLocation() isn't for UStaticMesh so we crash here.
-    FVector Result = (BallTwo->GetActorLocation() - BallOne->GetActorLocation()) / 2;
-    return Result;
 }
 
 // -----------------------------------------------------------------------------
