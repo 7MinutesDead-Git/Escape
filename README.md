@@ -127,7 +127,7 @@ TArray<AActor*> UMagneticBalls::FindClosestBalls(TArray<FBallDistances> ListOfBa
 }
 ```
 
-Unfortunately, something above is not reliable in that often I'm getting null or weird results for the SecondClosest.Ball, which means I can't determine a position based on two balls (any help or ideas would be great there) since functions like GetActorLocation() will crash on these incorrect pointers that *sometimes* show up.. I've been trying to troubleshoot this all day long. I think some data is lost somewhere when moving between variables above. No problem, I can come back to that later. For now let's do just the closest ball.
+Unfortunately, something above is not reliable in that in some frames I'm getting null or weird results for the SecondClosest.Ball, which means I can't always determine a position based on two balls (any help or ideas would be great there) since functions like GetActorLocation() will crash on these incorrect pointers that *sometimes* show up.. I've been trying to troubleshoot this all day long. I think some data is lost somewhere when moving between variables above. No problem, I can come back to that later. For now let's do just the closest ball.
 
 Next is to determine the destination. Now this I'm still trying to figure out as my knowledge of math with Vectors is about nil, but I *think* this is along the right lines.
 
