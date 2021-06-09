@@ -2,6 +2,7 @@ Each ball gets an array of all the other balls in the scene, then it grabs the c
 
 Well, here's the result so far hahah:  
 https://www.youtube.com/watch?v=ybqikdJpko0  
+https://www.youtube.com/watch?v=_C3mTcqNjAg  
   
 I was making balls to use as the mass triggers to open the door to escape.  
   
