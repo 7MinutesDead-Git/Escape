@@ -12,7 +12,6 @@
 #include "MagneticBalls.h"
 
 #include <activation.h>
-
 #include "DrawDebugHelpers.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
@@ -58,12 +57,13 @@ void UMagneticBalls::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    // All of this is to ensure we don't do access violations on null pointers, like when
-    // the player isn't holding anything.
+    // All of this is to ensure we don't do access violations on null pointers,
+    // like when the player isn't holding anything from ItemGrabber component.
     if (PlayerHoldingItem()) {
         FString GrabbedObjectName = PlayerPhysicsHandle->GrabbedComponent->GetOwner()->GetName();
-
+        // If we're grabbing this item as a player..
         if (GrabbedObjectName == GetOwner()->GetName()) {
+            // Then release it's hold on fellow balls. (not quite working yet)
             BallPhysicsHandle->ReleaseComponent();
         }
     }
@@ -71,6 +71,7 @@ void UMagneticBalls::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
     CurrentPosition = GetOwner()->GetActorLocation();
     SetDestination();
 
+    // Debug view of travel lines.
     if (EnableDebugView) {
         FRotator TargetRotation;
         BallPhysicsHandle->GetTargetLocationAndRotation(OUT Destination, OUT TargetRotation);
@@ -84,7 +85,6 @@ void UMagneticBalls::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
             0,                       // DepthPriority
             1                        // Thickness.
         );
-
     }
 }
 
@@ -108,29 +108,27 @@ TArray<AActor*> UMagneticBalls::FindClosestBalls(TArray<FBallDistances> ListOfBa
     FBallDistances Closest;
     FBallDistances SecondClosest;
 
-    int32 Count = 0;
-
     TArray<AActor*> Results;
     bool FirstCheck = true;
 
     for (FBallDistances Ball: ListOfBalls) {
-        Count += 1;
 
         if (FirstCheck) {
+            // We'll move the first ball checked directly into Closest.
             Closest.Ball = Ball.Ball;
             Closest.Distance = Ball.Distance;
             FirstCheck = false;
         }
+        // Then for each iteration after, we push the closest ball to the top.
         else if (Ball.Distance < Closest.Distance) {
-            // Push 1st down to 2nd, if it's not itself.
+            // Push previous closest down to 2nd.
             SecondClosest.Ball = Closest.Ball;
-            // Push newest up to 1st.
+            // Push newest up to closest.
             Closest.Ball = Ball.Ball;
             Closest.Distance = Ball.Distance;
         }
     }
 
-    // Order matters I think? We'll be calculating the midpoint vector between the two.
     Results.Push(Closest.Ball);
     Results.Push(SecondClosest.Ball);
 
@@ -149,16 +147,13 @@ TArray<AActor*> UMagneticBalls::GetAllMagneticBalls()
     // Find all objects with UMagneticBalls component. Add them to our array.
     for (TActorIterator<AActor> Actor(GetWorld()); Actor; ++Actor) {
 
-        // StaticMeshes are sliding into this list causing crashes.
-        // If "AActor" has picked up something like StaticMesh, then GetOwner won't be null.
-        // TODO: Replace this with a better solution.
+        // Ensure we're at the highest AActor level so we don't get unexpected crashes later.
         if (Actor->GetName().StartsWith("MagneticBall") && Actor->GetOwner() == nullptr) {
             // Skip itself to avoid marking itself as closest.
             if (Actor->GetUniqueID() == ThisObjectID) {
                 continue;
             }
             // Make sure we add the pointer to the list, not the actual object.
-            UE_LOG(LogTemp, Warning, TEXT("ADDING TO LIST: %s"), *Actor->GetName());
             Balls.Add(*Actor);
         }
     }
@@ -201,13 +196,14 @@ void UMagneticBalls::SetDestination()
 {
     BallsAndDistances = GetBallDistancePairs();
     ClosestBalls = FindClosestBalls(BallsAndDistances);
+    // TODO: Figure out problems with sometimes missing ClosestBalls[1].
 
+    // Single Ball Solution:
     UStaticMeshComponent* ClosestBallMesh = ClosestBalls[0]->FindComponentByClass<UStaticMeshComponent>();
     FVector ClosestBallLocation = ClosestBalls[0]->GetActorLocation();
     BallPhysicsHandle->GrabComponentAtLocation(ClosestBallMesh, NAME_None, ClosestBallLocation);
-    // TODO: Causing some weird but interesting configurations.
+    // Current vector - target vector to get the direction, divided by 2 to get the midpoint (I think).
     BallPhysicsHandle->SetTargetLocation(CurrentPosition - ClosestBallLocation / 2);
-
 }
 
 // -----------------------------------------------------------------------------
