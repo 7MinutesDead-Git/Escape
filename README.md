@@ -200,6 +200,8 @@ And the result is in that first video haha. If you read all of this you can see 
 
 I made a few changes to be able to include two-closest-balls calculations and now they're clumping together better, jittering around and making random shapes. I love it.
 
+Essentially the source ball will grab the closest ball, and force it into a position between the closest ball and the second closest ball, and all the balls are doing this to each other all at the same time, so the result is interesting movement and clumping now.
+
 ```cpp
 // -----------------------------------------------------------------------------
 /// Set destination based on two closest balls.
