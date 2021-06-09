@@ -1,3 +1,5 @@
+Each ball gets an array of all the other balls in the scene, then it grabs the closest ball with its invisible physics arm and forces the grabbed ball to move towards a position in between itself and the ball it just grabbed.
+
 Well, here's the result so far hahah:  
 https://www.youtube.com/watch?v=ybqikdJpko0  
   
