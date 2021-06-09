@@ -57,14 +57,19 @@ void UMagneticBalls::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    // All of this is to ensure we don't do access violations on null pointers,
+    // To ensure we don't do access violations on null pointers,
     // like when the player isn't holding anything from ItemGrabber component.
     if (PlayerHoldingItem()) {
+        // If we're grabbing this ball as a player..
         FString GrabbedObjectName = PlayerPhysicsHandle->GrabbedComponent->GetOwner()->GetName();
-        // If we're grabbing this item as a player..
         if (GrabbedObjectName == GetOwner()->GetName()) {
-            // Then release it's hold on fellow balls. (not quite working yet)
-            BallPhysicsHandle->ReleaseComponent();
+            // Then release all the holds from other balls on this ball.
+            for (AActor* Ball : BallsInLevel) {
+                UPhysicsHandleComponent* BallHandle = Ball->FindComponentByClass<UPhysicsHandleComponent>();
+                if (BallHandle->GrabbedComponent->GetOwner()->GetName() == GetOwner()->GetName())
+                    // This will probably fight with GrabComponent with each Ball, but it mostly works.
+                    BallHandle->ReleaseComponent();
+            }
         }
     }
 
@@ -117,12 +122,15 @@ TArray<AActor*> UMagneticBalls::FindClosestBalls(TArray<FBallDistances> ListOfBa
             // We'll move the first ball checked directly into Closest.
             Closest.Ball = Ball.Ball;
             Closest.Distance = Ball.Distance;
+            SecondClosest.Ball = Ball.Ball;
+            SecondClosest.Distance = Ball.Distance;
             FirstCheck = false;
         }
         // Then for each iteration after, we push the closest ball to the top.
         else if (Ball.Distance < Closest.Distance) {
             // Push previous closest down to 2nd.
             SecondClosest.Ball = Closest.Ball;
+            SecondClosest.Distance = Closest.Distance;
             // Push newest up to closest.
             Closest.Ball = Ball.Ball;
             Closest.Distance = Ball.Distance;
@@ -196,14 +204,23 @@ void UMagneticBalls::SetDestination()
 {
     BallsAndDistances = GetBallDistancePairs();
     ClosestBalls = FindClosestBalls(BallsAndDistances);
-    // TODO: Figure out problems with sometimes missing ClosestBalls[1].
 
-    // Single Ball Solution:
-    UStaticMeshComponent* ClosestBallMesh = ClosestBalls[0]->FindComponentByClass<UStaticMeshComponent>();
-    FVector ClosestBallLocation = ClosestBalls[0]->GetActorLocation();
+    AActor* BallOne = ClosestBalls[0];
+    AActor* BallTwo = ClosestBalls[1];
+
+    UStaticMeshComponent* ClosestBallMesh = BallOne->FindComponentByClass<UStaticMeshComponent>();
+    FVector ClosestBallLocation = BallOne->GetActorLocation();
+    FVector SecondClosestLocation = CurrentPosition;
+
+    // We can do a simple check like this to see if BallTwo is even valid, to avoid crashes for now.
+    if (BallTwo->GetActorLocation().Size()) {
+        SecondClosestLocation = BallTwo->GetActorLocation();
+    }
+
     BallPhysicsHandle->GrabComponentAtLocation(ClosestBallMesh, NAME_None, ClosestBallLocation);
-    // Current vector - target vector to get the direction, divided by 2 to get the midpoint (I think).
-    BallPhysicsHandle->SetTargetLocation(CurrentPosition - ClosestBallLocation / 2);
+    // Ball2 vector + Ball1 vector to get the direction, divided by 2 to get the midpoint.
+    // This will move this ball towards in between the two closest balls.
+    BallPhysicsHandle->SetTargetLocation((SecondClosestLocation + ClosestBallLocation) / 2);
 }
 
 // -----------------------------------------------------------------------------
