@@ -145,7 +145,7 @@ TArray<AActor*> UMagneticBalls::FindClosestBalls(TArray<FBallDistances> ListOfBa
 }
 
 // -----------------------------------------------------------------------------
-/// Retrieve all actors whose name starts with "MagneticBall". Return TArray.
+/// Retrieve all actors with UMagneticBalls component. Return TArray.
 /// \n Not very fool proof, but it works for now.
 TArray<AActor*> UMagneticBalls::GetAllMagneticBalls()
 {
@@ -156,7 +156,7 @@ TArray<AActor*> UMagneticBalls::GetAllMagneticBalls()
     for (TActorIterator<AActor> Actor(GetWorld()); Actor; ++Actor) {
 
         // Ensure we're at the highest AActor level so we don't get unexpected crashes later.
-        if (Actor->GetName().StartsWith("MagneticBall") && Actor->GetOwner() == nullptr) {
+        if (Actor->FindComponentByClass<UMagneticBalls>() && Actor->GetOwner() == nullptr) {
             // Skip itself to avoid marking itself as closest.
             if (Actor->GetUniqueID() == ThisObjectID) {
                 continue;
