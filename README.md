@@ -2,6 +2,7 @@ Each ball gets an array of all the other balls in the scene, then it grabs the c
 
 Well, here's the result so far hahah:  
 https://www.youtube.com/watch?v=ybqikdJpko0  
+https://www.youtube.com/watch?v=_C3mTcqNjAg  
   
 I was making balls to use as the mass triggers to open the door to escape.  
   
@@ -194,3 +195,59 @@ void UMagneticBalls::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 ```
 
 And the result is in that first video haha. If you read all of this you can see I've got things not working how I want, and missing some other intended mechanics, but the result is really interesting so far regardless so I had to share it.
+
+-- Updates --
+
+I made a few changes to be able to include two-closest-balls calculations and now they're clumping together better, jittering around and making random shapes. I love it.
+
+Essentially the source ball will grab the closest ball, and force it into a position between the closest ball and the second closest ball, and all the balls are doing this to each other all at the same time, so the result is interesting movement and clumping now.
+
+```cpp
+// -----------------------------------------------------------------------------
+/// Set destination based on two closest balls.
+void UMagneticBalls::SetDestination()
+{
+    BallsAndDistances = GetBallDistancePairs();
+    ClosestBalls = FindClosestBalls(BallsAndDistances);
+
+    AActor* BallOne = ClosestBalls[0];
+    AActor* BallTwo = ClosestBalls[1];
+
+    UStaticMeshComponent* ClosestBallMesh = BallOne->FindComponentByClass<UStaticMeshComponent>();
+    FVector ClosestBallLocation = BallOne->GetActorLocation();
+    FVector SecondClosestLocation = CurrentPosition;
+
+    // We can do a simple check like this to see if BallTwo is even valid, to avoid crashes for now.
+    if (BallTwo->GetActorLocation().Size()) {
+        SecondClosestLocation = BallTwo->GetActorLocation();
+    }
+
+    BallPhysicsHandle->GrabComponentAtLocation(ClosestBallMesh, NAME_None, ClosestBallLocation);
+    // Ball2 vector + Ball1 vector to get the direction, divided by 2 to get the midpoint.
+    // This will move this ball towards in between the two closest balls.
+    BallPhysicsHandle->SetTargetLocation((SecondClosestLocation + ClosestBallLocation) / 2);
+}
+```
+
+Then for being able to actually grab a ball as the player, while it's being grabbed by other balls, we can do this in the tick component:
+
+```cpp
+    // To ensure we don't do access violations on null pointers,
+    // like when the player isn't holding anything from ItemGrabber component.
+    if (PlayerHoldingItem()) {
+        // If we're grabbing this ball as a player..
+        FString GrabbedObjectName = PlayerPhysicsHandle->GrabbedComponent->GetOwner()->GetName();
+        if (GrabbedObjectName == GetOwner()->GetName()) {
+            // Then release all the holds from other balls on this ball.
+            for (AActor* Ball : BallsInLevel) {
+                UPhysicsHandleComponent* BallHandle = Ball->FindComponentByClass<UPhysicsHandleComponent>();
+                if (BallHandle->GrabbedComponent->GetOwner()->GetName() == GetOwner()->GetName())
+                    // This will probably fight with GrabComponent with each Ball, but it mostly works.
+                    BallHandle->ReleaseComponent();
+            }
+        }
+    }
+```
+
+And it works!
+
